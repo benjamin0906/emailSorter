@@ -16,7 +16,7 @@ def fetchMessages(server, maxEmail):
         i += 1
 
     # Fetching the selected emails
-    rawMsgs = server.fetch(getIds, ['ENVELOPE'])
+    rawMsgs = server.fetch(getIds, ['ENVELOPE', 'RFC822.SIZE'])
 
     # Making a list from the emails
     for key, value in rawMsgs.items():
@@ -24,13 +24,14 @@ def fetchMessages(server, maxEmail):
     print('Fetching is done!')
     return msgs
 
-def getSenders(Msgs):
-    senders = []
+def getMyInfo(Msgs):
+    myInfos = []
     for msg in Msgs:
         mailbox = msg[b'ENVELOPE'].from_[0].mailbox
         host = msg[b'ENVELOPE'].from_[0].host
-        senders.append(mailbox+b'@'+host)
-    return senders
+        info = {'from': mailbox+b'@'+host, 'size': msg[b'RFC822.SIZE']}
+        myInfos.append(info)
+    return myInfos
 
 Host = "imap.gmail.com"
 UserEmail = ""
@@ -52,31 +53,33 @@ if((len(UserEmail) != 0) and (len(UserPwd) != 0) and (numberOfEmails != 0)):
     select_info = server.select_folder("INBOX")
 
     allMessages = fetchMessages(server, numberOfEmails)
-    allSenders = getSenders(allMessages)
+    allMyInfo = getMyInfo(allMessages)
 
     groupedSenders = []
 
-    for sender in allSenders:
+    for myInfo in allMyInfo:
         i = 0
-        while((i < len(groupedSenders)) and (groupedSenders[i][0] != sender)):
+        while((i < len(groupedSenders)) and (groupedSenders[i]['from'] != myInfo['from'])):
             i += 1
         if(i == len(groupedSenders)):
-            groupedSenders.append([sender, 1])
+            groupedSenders.append({'from': myInfo['from'], 'amount': 1, 'size': myInfo['size']})
         else:
-            groupedSenders[i][1] += 1
+            groupedSenders[i]['amount'] += 1
+            groupedSenders[i]['size'] += myInfo['size']
+
 
     for i in range(0, len(groupedSenders)):
         max = 0
         maxIndex = 0
         for j in range(i, len(groupedSenders)):
-            if(groupedSenders[j][1] > max):
-                max = groupedSenders[j][1]
+            if(groupedSenders[j]['amount'] > max):
+                max = groupedSenders[j]['amount']
                 maxIndex = j
         temp = groupedSenders[i]
         groupedSenders[i] = groupedSenders[maxIndex]
         groupedSenders[maxIndex] = temp
 
     print('Result:')
-    print('All: '+str(len(allSenders))+'pcs')
+    print('All: '+str(len(allMyInfo))+'pcs')
     for sender in groupedSenders:
-        print(str(round(100*sender[1]/len(allSenders), 2))+'%\t', str(sender[1])+'pcs\t', str(sender[0], 'utf-8'))
+        print(str(round(100*sender['amount']/len(allMyInfo), 2))+'%\t', str(sender['amount'])+'pcs\t', str(round(sender['size']/1024, 2))+' kB\t', str(sender['from'], 'utf-8'))
