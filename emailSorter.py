@@ -9,7 +9,7 @@ def fetchMessages(server, maxId, maxEmail):
     i = maxId
     msgs = []
     while((i >= 0) and (emailCntr < maxEmail)):
-        tMsg = server.fetch(i, ['RFC822'])
+        tMsg = server.fetch(i, ['ENVELOPE'])
         if len(tMsg) != 0:
             msgs.append(tMsg[i])
             emailCntr += 1
@@ -22,12 +22,10 @@ def fetchMessages(server, maxId, maxEmail):
 
 def getSenders(Msgs):
     senders = []
-    addrFieldSign = b'\r\nFrom: '
     for msg in Msgs:
-        addrFieldStart = msg[b'RFC822'].find(addrFieldSign)+len(addrFieldSign)
-        addrStart = msg[b'RFC822'].find(b'<', addrFieldStart)+1
-        addrEnd = msg[b'RFC822'].find(b'>', addrStart)
-        senders.append(msg[b'RFC822'][addrStart:addrEnd])
+        mailbox = msg[b'ENVELOPE'].from_[0].mailbox
+        host = msg[b'ENVELOPE'].from_[0].host
+        senders.append(mailbox+b'@'+host)
     return senders
 
 Host = "imap.gmail.com"
@@ -77,4 +75,4 @@ if((len(UserEmail) != 0) and (len(UserPwd) != 0) and (numberOfEmails != 0)):
     print('Result:')
     print('All: '+str(len(allSenders))+'pcs')
     for sender in groupedSenders:
-        print(str(round(100*sender[1]/len(allSenders), 2))+'%\t', str(sender[1])+'pcs\t', sender[0])
+        print(str(round(100*sender[1]/len(allSenders), 2))+'%\t', str(sender[1])+'pcs\t', str(sender[0], 'utf-8'))
