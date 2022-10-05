@@ -67,7 +67,7 @@ if((len(UserEmail) != 0) and (len(UserPwd) != 0) and (numberOfEmails != 0)):
             groupedSenders[i]['amount'] += 1
             groupedSenders[i]['size'] += myInfo['size']
 
-
+    allSize = 0
     for i in range(0, len(groupedSenders)):
         max = 0
         maxIndex = 0
@@ -78,8 +78,15 @@ if((len(UserEmail) != 0) and (len(UserPwd) != 0) and (numberOfEmails != 0)):
         temp = groupedSenders[i]
         groupedSenders[i] = groupedSenders[maxIndex]
         groupedSenders[maxIndex] = temp
+        allSize += groupedSenders[i]['size']
 
-    print('Result:')
-    print('All: '+str(len(allMyInfo))+'pcs')
+    outputStr = "Result:\n"
+    outputStr += 'All: '+str(len(allMyInfo))+'pcs\n'
+    outputStr += 'All size: '+str(round(allSize/1024/1024, 4)) + ' MB\n'
     for sender in groupedSenders:
-        print(str(round(100*sender['amount']/len(allMyInfo), 2))+'%\t', str(sender['amount'])+'pcs\t', str(round(sender['size']/1024, 2))+' kB\t', str(sender['from'], 'utf-8'))
+        outputStr += str(round(100*sender['amount']/len(allMyInfo), 2)) + '%\t'
+        outputStr += str(sender['amount'])+'pcs\t'
+        outputStr += str(round(sender['size']/1024, 2))+' kB\t'
+        outputStr += str(sender['from'], 'utf-8') + '\n'
+
+    print(outputStr)
