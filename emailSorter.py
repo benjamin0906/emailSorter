@@ -1,22 +1,26 @@
 import sys
 from imapclient import IMAPClient
 
-def fetchMessages(server, maxId, maxEmail):
+def fetchMessages(server, maxEmail):
     print('Fetching messages...')
-    onePercent = maxEmail/100
-    prevCntr = 0
-    emailCntr = 0
-    i = maxId
+    getIds = []
     msgs = []
-    while((i >= 0) and (emailCntr < maxEmail)):
-        tMsg = server.fetch(i, ['ENVELOPE'])
-        if len(tMsg) != 0:
-            msgs.append(tMsg[i])
-            emailCntr += 1
-            if(emailCntr >= (prevCntr+onePercent)):
-                print(str(round(emailCntr/onePercent))+'%'+' ('+str(round(100*(maxId-i)/maxId, 2))+'%)')
-                prevCntr = emailCntr
-        i -= 1
+    emailIds = server.search([b'NOT', b'DELETED'])
+
+    # Counting down maxEmail number of ids
+    startIndex = len(emailIds)-maxEmail
+    i = 0
+    for id in emailIds:
+        if(i >= startIndex):
+            getIds.append(id)
+        i += 1
+
+    # Fetching the selected emails
+    rawMsgs = server.fetch(getIds, ['ENVELOPE'])
+
+    # Making a list from the emails
+    for key, value in rawMsgs.items():
+        msgs.append(value)
     print('Fetching is done!')
     return msgs
 
@@ -47,7 +51,7 @@ if((len(UserEmail) != 0) and (len(UserPwd) != 0) and (numberOfEmails != 0)):
     server.login(UserEmail, UserPwd)
     select_info = server.select_folder("INBOX")
 
-    allMessages = fetchMessages(server, int(select_info[b'UIDNEXT']), numberOfEmails)
+    allMessages = fetchMessages(server, numberOfEmails)
     allSenders = getSenders(allMessages)
 
     groupedSenders = []
