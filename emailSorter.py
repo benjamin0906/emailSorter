@@ -33,10 +33,16 @@ def getMyInfo(Msgs):
         myInfos.append(info)
     return myInfos
 
+def fillWithSpace(str, endLength):
+    while(len(str) < endLength):
+        str += ' '
+    return str
+
 Host = "imap.gmail.com"
 UserEmail = ""
 UserPwd = ""
 numberOfEmails = 0
+outputFileName = ""
 
 for arg in sys.argv:
     if((len(arg) > 3) and (arg[0] == '-') and (arg[2] == '=')):
@@ -46,6 +52,8 @@ for arg in sys.argv:
             UserPwd = arg[3:]
         elif(arg[1] == 'n'):
             numberOfEmails = int(arg[3:])
+        elif (arg[1] == 'f'):
+            outputFileName = arg[3:]
 
 if((len(UserEmail) != 0) and (len(UserPwd) != 0) and (numberOfEmails != 0)):
     server = IMAPClient(Host, use_uid=True, ssl=True)
@@ -81,12 +89,20 @@ if((len(UserEmail) != 0) and (len(UserPwd) != 0) and (numberOfEmails != 0)):
         allSize += groupedSenders[i]['size']
 
     outputStr = "Result:\n"
-    outputStr += 'All: '+str(len(allMyInfo))+'pcs\n'
+    outputStr += 'All: '+str(len(allMyInfo))+' pcs\n'
     outputStr += 'All size: '+str(round(allSize/1024/1024, 4)) + ' MB\n'
     for sender in groupedSenders:
-        outputStr += str(round(100*sender['amount']/len(allMyInfo), 2)) + '%\t'
-        outputStr += str(sender['amount'])+'pcs\t'
-        outputStr += str(round(sender['size']/1024, 2))+' kB\t'
-        outputStr += str(sender['from'], 'utf-8') + '\n'
+        t = str(round(100*sender['amount']/len(allMyInfo), 2)) + '%'
+        t = fillWithSpace(t, 8)
+        t += str(sender['amount'])+' pcs'
+        t = fillWithSpace(t, 20)
+        t += str(round(sender['size']/1024, 2))+' kB'
+        t = fillWithSpace(t, 36)
+        t += str(sender['from'], 'utf-8') + '\n'
+        outputStr += t
 
+    if(len(outputFileName) != 0):
+        f = open(outputFileName, 'w')
+        f.write(outputStr)
+        f.close()
     print(outputStr)
