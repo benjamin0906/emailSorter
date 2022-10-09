@@ -43,6 +43,7 @@ UserEmail = ""
 UserPwd = ""
 numberOfEmails = 0
 outputFileName = ""
+sortingBy = 'amount'
 
 for arg in sys.argv:
     if((len(arg) > 3) and (arg[0] == '-') and (arg[2] == '=')):
@@ -54,14 +55,22 @@ for arg in sys.argv:
             numberOfEmails = int(arg[3:])
         elif (arg[1] == 'f'):
             outputFileName = arg[3:]
+        elif (arg[1] == 's'):
+            if arg[3:] == 'size':
+                sortingBy = 'size'
+            elif arg[3:] == 'amount':
+                sortingBy = 'amount'
+
 
 if((len(UserEmail) != 0) and (len(UserPwd) != 0) and (numberOfEmails != 0)):
     server = IMAPClient(Host, use_uid=True, ssl=True)
     server.login(UserEmail, UserPwd)
     select_info = server.select_folder("INBOX")
+    metaData = {'amount': 0, 'size': 0}
 
     allMessages = fetchMessages(server, numberOfEmails)
     allMyInfo = getMyInfo(allMessages)
+    metaData['amount'] = len(allMyInfo)
 
     groupedSenders = []
 
@@ -75,24 +84,24 @@ if((len(UserEmail) != 0) and (len(UserPwd) != 0) and (numberOfEmails != 0)):
             groupedSenders[i]['amount'] += 1
             groupedSenders[i]['size'] += myInfo['size']
 
-    allSize = 0
+    # Sorting the list, and summing up the size
     for i in range(0, len(groupedSenders)):
         max = 0
         maxIndex = 0
         for j in range(i, len(groupedSenders)):
-            if(groupedSenders[j]['amount'] > max):
-                max = groupedSenders[j]['amount']
+            if(groupedSenders[j][sortingBy] > max):
+                max = groupedSenders[j][sortingBy]
                 maxIndex = j
         temp = groupedSenders[i]
         groupedSenders[i] = groupedSenders[maxIndex]
         groupedSenders[maxIndex] = temp
-        allSize += groupedSenders[i]['size']
+        metaData['size'] += groupedSenders[i]['size']
 
     outputStr = "Result:\n"
-    outputStr += 'All: '+str(len(allMyInfo))+' pcs\n'
-    outputStr += 'All size: '+str(round(allSize/1024/1024, 4)) + ' MB\n'
+    outputStr += 'Total amount: '+str(len(allMyInfo))+' pcs\n'
+    outputStr += 'Total size: '+str(round(metaData['size']/1024/1024, 4)) + ' MB\n'
     for sender in groupedSenders:
-        t = str(round(100*sender['amount']/len(allMyInfo), 2)) + '%'
+        t = str(round(100*sender[sortingBy]/metaData[sortingBy], 2)) + '%'
         t = fillWithSpace(t, 8)
         t += str(sender['amount'])+' pcs'
         t = fillWithSpace(t, 20)
